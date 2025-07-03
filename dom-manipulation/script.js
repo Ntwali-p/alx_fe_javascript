@@ -136,25 +136,25 @@ function addQuote() {
   alert("Quote added successfully!");
 }
 
-// Simulate quote POST to server
-function postQuoteToServer(quote) {
-  fetch("https://jsonplaceholder.typicode.com/posts", {
-    method: "POST",
-    body: JSON.stringify(quote),
-    headers: {
-      "Content-Type": "application/json; charset=UTF-8"
-    }
-  })
-    .then(res => res.json())
-    .then(data => {
-      console.log("Posted to server:", data);
-      notifyUser("Quote posted to server (simulated).");
-    })
-    .catch(err => {
-      console.error("Error posting:", err);
-      notifyUser("Failed to post quote to server.");
+// Post quote to server (simulated)
+async function postQuoteToServer(quote) {
+  try {
+    const res = await fetch("https://jsonplaceholder.typicode.com/posts", {
+      method: "POST",
+      body: JSON.stringify(quote),
+      headers: {
+        "Content-Type": "application/json; charset=UTF-8"
+      }
     });
+    const data = await res.json();
+    console.log("Posted to server:", data);
+    notifyUser("Quote posted to server (simulated).");
+  } catch (err) {
+    console.error("Error posting:", err);
+    notifyUser("Failed to post quote to server.");
+  }
 }
+
 
 // JSON import
 function importFromJsonFile(event) {
@@ -198,48 +198,47 @@ function createAddQuoteForm() {
 }
 
 // Checker-required: fetch from server
-function fetchQuotesFromServer() {
-  return fetch('https://jsonplaceholder.typicode.com/posts')
-    .then(response => response.json())
-    .then(data => {
-      return data.slice(0, 5).map(post => ({
-        text: post.title,
-        category: 'server'
-      }));
-    })
-    .catch(error => {
-      console.error("Failed to fetch quotes from server:", error);
-      notifyUser("Error fetching server quotes.");
-      return [];
-    });
+async function fetchQuotesFromServer() {
+  try {
+    const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+    const data = await response.json();
+    return data.slice(0, 5).map(post => ({
+      text: post.title,
+      category: 'server'
+    }));
+  } catch (error) {
+    console.error("Failed to fetch quotes from server:", error);
+    notifyUser("Error fetching server quotes.");
+    return [];
+  }
 }
 
-// Sync with server every 15s
-function syncWithServer() {
-  fetchQuotesFromServer().then(serverQuotes => {
-    let conflicts = 0;
-    let newQuotes = 0;
 
-    serverQuotes.forEach(serverQuote => {
-      const exists = quotes.some(localQuote => localQuote.text === serverQuote.text);
-      if (!exists) {
-        quotes.push(serverQuote);
-        newQuotes++;
-      } else {
-        conflicts++;
-      }
-    });
+// Sync with server
+async function syncQuotes() {
+  const serverQuotes = await fetchQuotesFromServer();
+  let conflicts = 0;
+  let newQuotes = 0;
 
-    if (newQuotes > 0) {
-      saveQuotes();
-      populateCategories();
-      filterQuotes();
-    }
-
-    if (conflicts > 0 || newQuotes > 0) {
-      notifyUser(`${newQuotes} new quotes added, ${conflicts} conflicts resolved.`);
+  serverQuotes.forEach(serverQuote => {
+    const exists = quotes.some(localQuote => localQuote.text === serverQuote.text);
+    if (!exists) {
+      quotes.push(serverQuote);
+      newQuotes++;
+    } else {
+      conflicts++;
     }
   });
+
+  if (newQuotes > 0) {
+    saveQuotes();
+    populateCategories();
+    filterQuotes();
+  }
+
+  if (conflicts > 0 || newQuotes > 0) {
+    notifyUser(`${newQuotes} new quotes added, ${conflicts} conflicts resolved.`);
+  }
 }
 
 // Show status messages
@@ -265,6 +264,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
   categorySelect.addEventListener("change", showRandomQuote);
 
-  syncWithServer(); // Initial sync
-  setInterval(syncWithServer, 15000); // Sync every 15 seconds
+  syncQuotes(); // Initial sync
+  setInterval(syncQuotes, 15000); // Sync every 15 seconds
 });
