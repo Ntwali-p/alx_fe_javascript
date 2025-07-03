@@ -75,3 +75,85 @@ function createAddQuoteForm() {
   // You can optionally dynamically create form elements here if desired.
   console.log("createAddQuoteForm called — form exists in HTML.");
 }
+//saveQuotes
+function saveQuotes() {
+  localStorage.setItem('quotes', JSON.stringify(quotes));
+}
+//loadQuotes
+function loadQuotes() {
+  const storedQuotes = localStorage.getItem('quotes');
+  if (storedQuotes) {
+    quotes = JSON.parse(storedQuotes);
+  }
+}
+//Session Storage: Last Viewed Quote
+function showRandomQuote() {
+  const selectedCategory = categorySelect.value;
+  const filteredQuotes = selectedCategory === "all"
+    ? quotes
+    : quotes.filter(q => q.category === selectedCategory);
+
+  if (filteredQuotes.length === 0) {
+    quoteDisplay.textContent = "No quotes available in this category.";
+    return;
+  }
+
+  const randomQuote = filteredQuotes[Math.floor(Math.random() * filteredQuotes.length)];
+  quoteDisplay.textContent = `"${randomQuote.text}" — ${randomQuote.category}`;
+
+  // Store in sessionStorage
+  sessionStorage.setItem('lastQuote', JSON.stringify(randomQuote));
+}
+
+// Optionally show last quote on load
+function showLastViewedQuote() {
+  const last = sessionStorage.getItem('lastQuote');
+  if (last) {
+    const quote = JSON.parse(last);
+    quoteDisplay.textContent = `"${quote.text}" — ${quote.category}`;
+  }
+}
+
+// Import Button Functionality
+function importFromJsonFile(event) {
+  const fileReader = new FileReader();
+  fileReader.onload = function(event) {
+    try {
+      const importedQuotes = JSON.parse(event.target.result);
+      if (Array.isArray(importedQuotes)) {
+        quotes.push(...importedQuotes);
+        saveQuotes();
+        populateCategories();
+        alert('Quotes imported successfully!');
+      } else {
+        alert('Invalid JSON format.');
+      }
+    } catch (err) {
+      alert('Error reading JSON: ' + err.message);
+    }
+  };
+  fileReader.readAsText(event.target.files[0]);
+}
+//Export Functionality
+function exportToJsonFile() {
+  const dataStr = JSON.stringify(quotes, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "quotes.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+//the bottom
+document.addEventListener("DOMContentLoaded", () => {
+  loadQuotes();
+  populateCategories();
+  showLastViewedQuote();
+
+  newQuoteBtn.addEventListener("click", showRandomQuote);
+  document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
+  categorySelect.addEventListener("change", showRandomQuote);
+});
