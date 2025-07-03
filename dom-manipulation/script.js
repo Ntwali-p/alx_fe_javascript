@@ -234,3 +234,68 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
   categorySelect.addEventListener("change", showRandomQuote);
 });
+// Simulate fetching quotes from a server every 15 seconds
+function syncWithServer() {
+  fetch('https://jsonplaceholder.typicode.com/posts')
+    .then(response => response.json())
+    .then(serverData => {
+      const serverQuotes = serverData.slice(0, 5).map(post => ({
+        text: post.title,
+        category: 'server'
+      }));
+
+      let conflicts = 0;
+
+      serverQuotes.forEach(sq => {
+        // Check if quote already exists (based on text match)
+        const exists = quotes.some(lq => lq.text === sq.text);
+        if (!exists) {
+          quotes.push(sq);
+        } else {
+          conflicts++;
+        }
+      });
+
+      if (serverQuotes.length > 0) {
+        saveQuotes();
+        populateCategories();
+        filterQuotes();
+      }
+
+      if (conflicts > 0) {
+        notifyUser(`${conflicts} server quotes already existed locally (conflicts ignored).`);
+      } else {
+        notifyUser(`Quotes synced from server!`);
+      }
+    })
+    .catch(err => {
+      console.error("Sync error:", err);
+      notifyUser("Error syncing with server.");
+    });
+}
+//Notification System
+function notifyUser(message) {
+  const note = document.createElement("div");
+  note.textContent = message;
+  note.style.background = "#ffffcc";
+  note.style.padding = "10px";
+  note.style.marginTop = "10px";
+  note.style.border = "1px solid #999";
+  note.style.borderRadius = "4px";
+  document.body.prepend(note);
+  setTimeout(() => note.remove(), 5000);
+}
+//DOMContentLoaded Initialize Periodic Sync
+document.addEventListener("DOMContentLoaded", () => {
+  loadQuotes();
+  populateCategories();
+  showLastViewedQuote();
+
+  newQuoteBtn.addEventListener("click", showRandomQuote);
+  document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
+  categorySelect.addEventListener("change", showRandomQuote);
+
+  // Start sync every 15 seconds
+  syncWithServer();
+  setInterval(syncWithServer, 15000); // every 15 sec
+});
