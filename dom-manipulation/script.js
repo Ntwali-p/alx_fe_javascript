@@ -157,3 +157,80 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
   categorySelect.addEventListener("change", showRandomQuote);
 });
+//populateCategories
+function populateCategories() {
+  const categorySet = new Set(quotes.map(q => q.category));
+  const categories = Array.from(categorySet);
+
+  // Clear and repopulate categorySelect
+  categorySelect.innerHTML = '<option value="all">All</option>';
+  categories.forEach(cat => {
+    const option = document.createElement("option");
+    option.value = cat;
+    option.textContent = capitalize(cat);
+    categorySelect.appendChild(option);
+  });
+
+  // Clear and repopulate categoryFilter
+  const filterDropdown = document.getElementById("categoryFilter");
+  if (filterDropdown) {
+    filterDropdown.innerHTML = '<option value="all">All Categories</option>';
+    categories.forEach(cat => {
+      const option = document.createElement("option");
+      option.value = cat;
+      option.textContent = capitalize(cat);
+      filterDropdown.appendChild(option);
+    });
+
+    // Restore last selected filter
+    const savedFilter = localStorage.getItem("lastCategoryFilter");
+    if (savedFilter) {
+      filterDropdown.value = savedFilter;
+      filterQuotes(); // Display quotes matching saved filter
+    }
+  }
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+//filterQuotes
+function filterQuotes() {
+  const selectedCategory = document.getElementById("categoryFilter").value;
+  const quoteContainer = document.getElementById("filteredQuotes");
+
+  const filtered = selectedCategory === "all"
+    ? quotes
+    : quotes.filter(q => q.category === selectedCategory);
+
+  // Save selected filter to localStorage
+  localStorage.setItem("lastCategoryFilter", selectedCategory);
+
+  // Clear and populate filteredQuotes div
+  quoteContainer.innerHTML = "";
+  if (filtered.length === 0) {
+    quoteContainer.textContent = "No quotes available in this category.";
+    return;
+  }
+
+  filtered.forEach(q => {
+    const p = document.createElement("p");
+    p.textContent = `"${q.text}" — ${capitalize(q.category)}`;
+    quoteContainer.appendChild(p);
+  });
+}
+//addQuote
+saveQuotes();
+populateCategories(); // refresh both dropdowns
+filterQuotes();       // refresh the filtered list
+
+//DOMContentLoaded
+document.addEventListener("DOMContentLoaded", () => {
+  loadQuotes();
+  populateCategories();
+  showLastViewedQuote();
+
+  newQuoteBtn.addEventListener("click", showRandomQuote);
+  document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
+  categorySelect.addEventListener("change", showRandomQuote);
+});
